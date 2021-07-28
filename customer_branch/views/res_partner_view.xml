@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="res_partner_view_buttons" model="ir.ui.view">
+            <field name="name">res.partner.view.buttons</field>
+            <field name="model">res.partner</field>
+            <field name="inherit_id" ref="base.view_partner_form" />
+            <field name="priority" eval="3"/>
+            <field name="arch" type="xml">
+                <div name="button_box" position="inside">
+                    <button class="oe_stat_button" type="object" name="action_open_areas" 
+                        icon="fa-sitemap">
+                       <field string="Areas" name="areas_count" widget="statinfo"/>
+                    </button>
+                    <button class="oe_stat_button" type="object" name="action_open_buildings" 
+                        icon="fa-th">
+                       <field string="Buildings" name="buildings_count" widget="statinfo"/>
+                    </button>
+                </div>
+                <page name="sales_purchases" position="before">
+                    <page name="area_info" string="Area Details">
+                        <field name="area_ids" readonly="True">
+                            <tree>
+                                <field name="name"/>
+                                <field name="arabic_name" string="Arabic name"/>
+                                <field name="contact_name" invisible="1"/>
+                                <field name="area_related_contacts"/>
+                                <field name="mobile"/>
+                                <field name="phone"/>
+                                <button name="action_open_googlemaps" type="object" string="view Location" icon="fa-location-arrow"/>
+                            </tree>
+                        </field>
+                   </page>
+                    <page name="building_info" string="Building Details">
+                        <field name="bulding_ids" readonly="True">
+                            <tree>
+                                <field name="name"/>
+                                <field name="arabic_name" string="Arabic name"/>
+                               <field name="contact_name" invisible="1"/>
+                                <field name="mobile" invisible="1"/>
+                                <field name="phone" />
+                                <field name="floor"/>
+                                <field name="room"/>
+                                <button name="action_open_googlemaps" type="object" string="view Location" icon="fa-location-arrow"/>
+                            </tree>
+                        </field>
+                   </page>
+                </page>
+            </field>
+        </record>
+        
+    </data>
+</odoo>
