@@ -27,6 +27,7 @@
         'views/views.xml',
         'views/templates.xml',
         'data/default_data.xml',
+        'views/helpdesk_view.xml',
     ],
     # only loaded in demonstration mode
     'demo': [

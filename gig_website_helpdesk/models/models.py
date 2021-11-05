@@ -1,5 +1,18 @@
 # -*- coding: utf-8 -*-
 from odoo import models, fields, api
+import pytz
+import datetime
+from datetime import timedelta, date
+
+
+TICKET_PRIORITY = [
+    ('0', 'All'),
+    ('1', 'Low priority'),
+    ('2', 'High priority'),
+    ('3', 'Urgent'),
+    ('4', 'Urgent'),
+    ('5', 'Urgent'),
+]
 
 class gigWebsite(models.Model):
 	_inherit = "website"
@@ -16,19 +29,44 @@ class gigWebsite(models.Model):
 class gigHelpdeskTicket(models.Model):
 	_inherit = "helpdesk.ticket"
 	area_id = fields.Many2one('customer.branch',string="Area/Zone")
+	create_time = fields.Char('Time')
 	building_id = fields.Many2one('building.building',string="Building")
 	tranfer_to = fields.Many2one('res.users', string='Transfer to',domain=lambda self: [('groups_id', 'in', self.env.ref('industry_fsm.group_fsm_manager').id)])
 
 	# please execute this query to whitelist fields 
 	# UPDATE ir_model_fields set website_form_blacklisted='false' WHERE model='helpdesk.ticket' AND name='building_id'
 	# UPDATE ir_model_fields set website_form_blacklisted='false' WHERE model='helpdesk.ticket' AND name='area_id'
-	  
+	
+	@api.onchange('partner_id')
+	def get_partner_area(self):
+		self.area_id = False
+		return {'domain':{'area_id':[('id','in',self.partner_id.area_ids.ids)]}}
+
+	@api.onchange('area_id')
+	def get_partner_buildings(self):
+		self.building_id = False
+		return {'domain':{'building_id':[('id','in',self.area_id.bulding_ids.ids)]}}
+
+
 	def write(self, vals):
 		res =  super(gigHelpdeskTicket, self).write(vals)
 		if 'tranfer_to' in vals and vals['tranfer_to']:
 			self.createFieldService()
 			self.chage_ticket_state()
 		return res
+
+	def create(self, vals):
+		res =  super(gigHelpdeskTicket, self).create(vals)
+		res._get_create_time()
+		if res.tranfer_to:
+			res.createFieldService()
+		return res
+
+	def _get_create_time(self):
+		dubai_timezone = pytz.timezone("Asia/Dubai")
+		dubai_time = datetime.datetime.now(dubai_timezone)
+		time = str(dubai_time.hour) + ':' + str(dubai_time.minute)
+		self.create_time = time
 
 	def createFieldService(self):
 		task = self.env['project.task'].sudo().search([('task_id', '=' , self.id)])
@@ -40,6 +78,8 @@ class gigHelpdeskTicket(models.Model):
 			pjt_task= self.env['project.task'].sudo().create({
 			'name' : self.name,
 			'tranfer_to':self.tranfer_to.id,
+			'priority':self.priority,
+			'description':self.note,
 			'user_id' : False,
 			'partner_id':self.partner_id.id,
 			'project_id':default_service.id if default_service else False,
@@ -59,6 +99,8 @@ class HelpdeskProjectInherit(models.Model):
 	area_id = fields.Many2one('customer.branch',string="Area/Zone")
 	building_id = fields.Many2one('building.building',string="Building")
 	tranfer_to = fields.Many2one('res.users', string='Transfer to')
+	priority = fields.Selection(TICKET_PRIORITY, string='Priority', default='0')
+
 	
 
 	@api.onchange('partner_id')
@@ -98,7 +140,7 @@ class HelpdeskProjectInherit(models.Model):
 		if self.task_id.stage_id.name == 'Open':
 			inprogress_state_id = self.env['helpdesk.stage'].sudo().search([('name','=','In Progress')])
 			self.task_id.stage_id = inprogress_state_id.id
-	
 
-
-    
+	class HelpdeskResPartnerInherit(models.Model):
+		_inherit = 'res.partner'
+		is_full_record_access = fields.Boolean('Grand Full Access',default=False)
